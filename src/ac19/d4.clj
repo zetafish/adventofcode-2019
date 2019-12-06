@@ -13,31 +13,36 @@
       (recur (conj d (mod n 10))
              (quot n 10)))))
 
-(defn has-n-tuple?
-  [n col]
-  (->>
-   (map #(drop % col) (range n))
-   (mapcat #(partition n %))
-   (some (partial apply =))))
-
 (defn non-decreasing?
   [col]
   (apply <= col))
 
-(defn solve1 [a b]
-  (->> (range a (inc b))
-       (map digits)
-       (filter (partial has-n-tuple? 2))
-       (filter non-decreasing?)
-       (count)))
+(defn has-pair?
+  [col]
+  (->>
+   (partition-by identity col)
+   (map count)
+   (filter #(<= 2 %))
+   seq))
 
-(defn solve2 [a b]
-  (->> (range a (inc b))
-       (map digits)
-       (filter (partial has-n-tuple? 2))
-       (remove (partial has-n-tuple? 3))
-       (filter non-decreasing?)
-       (count)))
+(defn has-true-pair?
+  [col]
+  (->>
+   (partition-by identity col)
+   (map count)
+   (filter #(= 2 %))
+   seq))
 
-(solve1 start end)
-(solve2 start end)
+(defn scan-range
+  [a b pred]
+  (->>
+   (range a (inc b))
+   (map digits)
+   (filter pred)
+   count))
+
+;; part 1
+(scan-range start end (every-pred non-decreasing? has-pair?))
+
+;; part 2
+(scan-range start end (every-pred non-decreasing? has-true-pair?))
