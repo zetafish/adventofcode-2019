@@ -97,18 +97,13 @@
 (run {:amps (amps x2 [0 1 2 3 4]) :signal 0})
 (run {:amps (amps x3 [1 0 4 3 2]) :signal 0})
 
-;; part 1
-(def maximize-run (partial maximize run [0 1 2 3 4]))
-(maximize-run x1)
-(maximize-run x1)
-(maximize-run x3)
-(maximize-run code)
+;; ;; part 1
+(maximize run [0 1 2 3 4] x1)
+(maximize run [0 1 2 3 4] x1)
+(maximize run [0 1 2 3 4] x3)
+(maximize run [0 1 2 3 4] code)
 
 ;; part 2
-(feedback (amps x4 [9 8 7 6 5]))
-(feedback (amps x5 [9 7 8 5 6]))
-
-(def maximize-feedback (partial maximize feedback [5 6 7 8 9]))
-(maximize-feedback x4)
-(maximize-feedback x5)
-(maximize-feedback code)
+(maximize feedback [9 8 6 7 5] x4)
+(maximize feedback [9 8 7 6 5] x5)
+(maximize feedback [9 8 7 6 5] code)

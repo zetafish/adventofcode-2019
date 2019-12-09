@@ -11,33 +11,33 @@
   (let [m [(-> n (quot 100) (rem 10))
            (-> n (quot 1000) (rem 10))
            (-> n (quot 10000) (rem 10))]]
-    {:opcode (rem n 100)
+    {:opmemory (rem n 100)
      :m m
      :m1 (m 0)
      :m2 (m 1)
      :m3 (m 2)}))
 
 (defn step
-  [{:keys [code n input] :as state}]
-  (let [{:keys [opcode m]} (parse-inst (code n))
+  [{:keys [memory n input] :as state}]
+  (let [{:keys [opmemory m]} (parse-inst (memory n))
         par (fn [i]
-              (let [x (code (+ i n))]
+              (let [x (memory (+ i n))]
                 (if (= 0 (m (dec i)))
-                  (code x)
+                  (memory x)
                   x)))]
-    (case opcode
+    (case opmemory
       ;; ADD
       1 (-> state
             (update :n + 4)
-            (assoc-in [:code (code (+ 3 n))] (+ (par 1) (par 2))))
+            (assoc-in [:memory (memory (+ 3 n))] (+ (par 1) (par 2))))
       ;; MUL
       2 (-> state
             (update :n + 4)
-            (assoc-in [:code (code (+ 3 n))] (* (par 1) (par 2))))
+            (assoc-in [:memory (memory (+ 3 n))] (* (par 1) (par 2))))
       ;; RECV
       3 (-> state
             (update :n + 2)
-            (assoc-in [:code (code (+ 1 n))] (first input))
+            (assoc-in [:memory (memory (+ 1 n))] (first input))
             (update :input rest))
       ;; EMIT
       4 (-> state
@@ -54,25 +54,25 @@
       ;; LT
       7 (-> state
             (update :n + 4)
-            (assoc-in [:code (code (+ 3 n))]
+            (assoc-in [:memory (memory (+ 3 n))]
                       (if (< (par 1) (par 2)) 1 0)))
       ;; EQ
       8 (-> state
             (update :n + 4)
-            (assoc-in [:code (code (+ 3 n))]
+            (assoc-in [:memory (memory (+ 3 n))]
                       (if (= (par 1) (par 2)) 1 0)))
       ;; HALT
       99 (assoc state :halted true))))
 
 (defn disassemble
-  [{:keys [code n] :as state}]
-  (let [{:keys [opcode m]} (parse-inst (code n))
+  [{:keys [memory n] :as state}]
+  (let [{:keys [opmemory m]} (parse-inst (memory n))
         param (fn [i]
-                (let [v (code (+ i 1 n))]
+                (let [v (memory (+ i 1 n))]
                   (if (= 0 (m i)) [v] v)))
         f (fn [mnemonic k]
             (concat [mnemonic] (map param (range k))))
-        instr (case opcode
+        instr (case opmemory
                 1 (f "ADD" 3)
                 2 (f "MUL" 3)
                 3 (f "RECV" 1)
@@ -89,10 +89,10 @@
 
 (defn machine
   "Create a machine"
-  ([code input]
-   {:code code :n 0 :input input})
-  ([code]
-   {:code code :n 0}))
+  ([memory input]
+   {:memory memory :n 0 :input input})
+  ([memory]
+   {:memory memory :n 0}))
 
 (defn run
   "Run to HALT state"
