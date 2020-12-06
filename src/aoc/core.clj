@@ -39,13 +39,6 @@
                   0 (fetch (fetch (+ i n)))
                   1 (fetch (+ i n))
                   2 (fetch (+ base (fetch (+ i n)))))))
-        modifier (fn [i]
-                   (case (mode (dec i))
-                     0 fetch
-                     1 identity
-                     2 (comp fetch (partial + base))))
-        param (fn [i] (memory (+ i n)))
-        param* (fn [i] ((modifier i) (param i)))
         loc (fn [i]
               (case (mode (dec i))
                 0 (memory (+ i n))
