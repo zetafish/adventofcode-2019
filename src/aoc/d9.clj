@@ -15,3 +15,6 @@
 
 ;; part 1
 (core/run (assoc (core/machine code) :input [1]))
+
+;; part 2
+(core/run (assoc (core/machine code) :input [2]))
