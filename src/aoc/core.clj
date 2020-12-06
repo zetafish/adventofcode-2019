@@ -5,6 +5,7 @@
 ;; Related puzzles
 ;; 2: ADD(1),MUL(2),HALT(99)
 ;; 5: RECV(3),EMIT(4)
+;; 7: functional composition
 
 (defn digits [n]
   (loop [v nil n n]
@@ -127,17 +128,19 @@
    :input []
    :output []})
 
-(defn set-seed
-  [machine [a b]]
-  (-> machine
-      (assoc-in [:memory 1] a)
-      (assoc-in [:memory 2] b)))
-
 (defn run
   "Run to HALT state"
-  ([machine] (run machine []))
-  ([machine input]
-   (loop [machine (assoc machine :input input)]
-     (if (:halted machine)
-       machine
-       (recur (step machine))))))
+  [machine]
+  (loop [machine machine]
+    (if (:halted machine)
+      machine
+      (recur (step machine)))))
+
+(defn run-to-output
+  [machine]
+  (let [out (machine :output)]
+    (loop [machine machine]
+      (cond
+        (:halted machine) machine
+        (not= out (:output machine)) machine
+        :else (recur (step machine))))))

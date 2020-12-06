@@ -1,5 +1,6 @@
 (ns aoc.d7
-  (:require [aoc.core :as core]))
+  (:require [aoc.core :as core]
+            [clojure.math.combinatorics :refer [permutations]]))
 
 (def x1 [3 15 3 16 1002 16 10 16 1 16 15 15 4 15 99 0 0])
 
@@ -18,86 +19,45 @@
 
 (def code (core/read-code "d7.txt"))
 
-(defn cart
-  "Cartesian product"
-  [colls]
-  (if-not (seq colls)
-    [[]]
-    (for [more (cart (rest colls))
-          x (first colls)]
-      (cons x more))))
+(def machine (core/machine code))
 
-(defn phase-options
-  "Returns valid phase options"
-  [nums]
-  (let [n (count nums)]
-    (filter #(= n (count (distinct %)))
-            (cart (repeat n nums)))))
+(defn amp [machine phase]
+  (update-in machine [:input] conj phase))
 
-(defn amp
-  "Create an amp"
-  [code phase]
-  (core/machine code [phase]))
+(defn circuit [machine phases]
+  (map (partial amp machine) phases))
 
-(defn amps
-  "Create a circuit of amps"
-  [code settings]
-  (mapv (partial amp code) settings))
+(defn single-pass
+  [amps]
+  (loop [input 0 amps amps]
+    (if (empty? amps)
+      input
+      (let [amp (-> (first amps)
+                    (update :input conj input)
+                    core/run-to-output)
+            input (last (:output amp))]
+        (recur input (rest amps))))))
 
-(defn halted?
-  "Returns `true` if any of the amps is halted."
-  [{:keys [amps]}]
-  (seq (keep :halted amps)))
+(defn run-feedback
+  [amps]
+  (loop [input 0 amps (vec amps) n 0]
+    (if (every? :halted amps)
+      input
+      (let [amp (-> (get amps n)
+                    (update :input conj input)
+                    core/run-to-output)
+            input (last (:output amp))]
+        (recur input (assoc amps n amp) (rem (inc n) 5))))))
 
-(defn produce-output
-  [amp signal]
-  (let [n (count (:output amp))]
-    (->> (update amp :input conj signal)
-         (iterate core/step)
-         (drop-while #(and (not (:halted %))
-                           (= n (count (:output %)))))
-         first)))
 
-(defn run
-  "Sends `signal` to the first amp, use the output as the signal to the
-  next amp etc. until the last one."
-  [{:keys [amps signal]}]
-  (let [a (produce-output (amps 0) signal)
-        b (produce-output (amps 1) (last (:output a)))
-        c (produce-output (amps 2) (last (:output b)))
-        d (produce-output (amps 3) (last (:output c)))
-        e (produce-output (amps 4) (last (:output d)))]
-    {:amps [a b c d e]
-     :signal (last (:output e))}))
-
-(defn feedback
-  "Run feedback loop until the amps are halted."
-  [circuit]
-  (->> (iterate run circuit)
-       (drop-while (complement halted?))
-       first))
-
-(defn maximize
-  [f nums code]
-  (->> (phase-options nums)
-       (map #(amps code %))
-       (map #(hash-map :amps % :signal 0))
-       (map f)
-       (map :signal)
-       (sort)
-       (last)))
-
-(run {:amps (amps x1 [4 3 2 1 0]) :signal 0})
-(run {:amps (amps x2 [0 1 2 3 4]) :signal 0})
-(run {:amps (amps x3 [1 0 4 3 2]) :signal 0})
-
-;; ;; part 1
-(maximize run [0 1 2 3 4] x1)
-(maximize run [0 1 2 3 4] x1)
-(maximize run [0 1 2 3 4] x3)
-(maximize run [0 1 2 3 4] code)
+;; part 1
+(->> (permutations [4 3 2 1 0])
+     (map #(circuit machine %))
+     (map single-pass)
+     (apply max))
 
 ;; part 2
-(maximize feedback [9 8 6 7 5] x4)
-(maximize feedback [9 8 7 6 5] x5)
-(maximize feedback [9 8 7 6 5] code)
+(->> (permutations [9 8 7 6 5])
+     (map #(circuit machine %))
+     (map run-feedback)
+     (apply max))

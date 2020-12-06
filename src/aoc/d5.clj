@@ -6,7 +6,7 @@
 (def machine (core/machine code))
 
 ;; part 1
-(last (:output (core/run machine [1])))
+(last (:output (core/run (assoc machine :input [1]))))
 
 ;; part 2
-(last (:output (core/run machine [5])))
+(last (:output (core/run (assoc machine :input [5]))))
