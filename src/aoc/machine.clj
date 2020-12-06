@@ -2,25 +2,33 @@
   (:require [clojure.string :as str]
             [clojure.java.io :as io]))
 
-;; puzzles that use the machine
-(def puzzles [2])
-
 (defn read-code [f]
   (->> (str/split (str/trim-newline (slurp (io/resource f))) #",")
        (map #(Integer/parseInt %))
        vec))
 
+(keep-indexed (fn [i x] [i x]) [ 4 5 6])
+
 (defn machine [code]
-  {:memory code :n 0})
+  {:memory (zipmap (iterate inc 0) code)
+   :n 0
+   :input []
+   :output []
+   :base 0})
+
 
 (defn memory-at [machine n]
   (get-in machine [:memory n]))
 
-(defmulti step (fn [{:keys [memory n]}] (get memory n)))
 
-(defmethod step 1 [{memory :memory :as machine}]
+(defmulti trace (fn [{:keys [n memory]}] (rem (get memory n) 100)))
+
+(defmethod trace 1 [{:keys [n memory] :as machine}]
   (-> machine
       (update :n + 4)
+      (assoc-in [:memory (memory (+ 3 n))]
+                (+ (memory )))
+
       (assoc-in [:memory ] (+' (memory a) (memory b)))))
 
 (defmethod step 2 [{memory :memory :as machine}]
