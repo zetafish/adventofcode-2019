@@ -1,16 +1,12 @@
 (ns aoc.d5
-  (:require [ac19.core :as core]
-            [clojure.java.io :as io]
-            [clojure.string :as str]))
+  (:require [aoc.core :as core]))
 
-(def raw (slurp (io/resource "d5.txt")))
+(def code (core/read-code "d5.txt"))
 
-(def code (->> (str/split (str/trim-newline raw) #",")
-               (map #(Integer/parseInt %))
-               vec))
+(def machine (core/machine code))
 
 ;; part 1
-(:output (core/run (core/machine code [1])))
+(last (:output (core/run machine [1])))
 
 ;; part 2
-(:output (core/run (core/machine code [5])))
+(last (:output (core/run machine [5])))

@@ -3,7 +3,8 @@
             [clojure.java.io :as io]))
 
 ;; Related puzzles
-;; 9
+;; 2: ADD(1),MUL(2),HALT(99)
+;; 5: RECV(3),EMIT(4)
 
 (defn digits [n]
   (loop [v nil n n]
@@ -118,16 +119,15 @@
 
 (defn machine
   "Create a machine"
-  ([memory] (machine memory []))
-  ([memory input]
-   {:memory (zipmap (iterate inc 0) memory)
-    :cost 0
-    :n 0
-    :base 0
-    :input input
-    :output []}))
+  [memory]
+  {:memory (zipmap (iterate inc 0) memory)
+   :cost 0
+   :n 0
+   :base 0
+   :input []
+   :output []})
 
-(defn seed-machine
+(defn set-seed
   [machine [a b]]
   (-> machine
       (assoc-in [:memory 1] a)
@@ -135,8 +135,9 @@
 
 (defn run
   "Run to HALT state"
-  [machine]
-  (loop [state machine]
-    (if (:halted state)
-      state
-      (recur (step state)))))
+  ([machine] (run machine []))
+  ([machine input]
+   (loop [machine (assoc machine :input input)]
+     (if (:halted machine)
+       machine
+       (recur (step machine))))))
