@@ -1,7 +1,5 @@
 (ns aoc.d7
-  (:require [ac19.core :as core]
-            [clojure.java.io :as io]
-            [clojure.string :as str]))
+  (:require [aoc.core :as core]))
 
 (def x1 [3 15 3 16 1002 16 10 16 1 16 15 15 4 15 99 0 0])
 
@@ -18,11 +16,7 @@
          -5 54 1105 1 12 1 53 54 53 1008 54 0 55 1001 55 1 55 2 53 55 53 4
          53 1001 56 -1 56 1005 56 6 99 0 0 0 0 10])
 
-(def raw (slurp (io/resource "d7.txt")))
-
-(def code (->> (str/split (str/trim-newline raw) #",")
-               (map #(Integer/parseInt %))
-               vec))
+(def code (core/read-code "d7.txt"))
 
 (defn cart
   "Cartesian product"

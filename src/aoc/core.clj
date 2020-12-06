@@ -1,4 +1,9 @@
-(ns aoc.core)
+(ns aoc.core
+  (:require [clojure.string :as str]
+            [clojure.java.io :as io]))
+
+;; Related puzzles
+;; 9
 
 (defn digits [n]
   (loop [v nil n n]
@@ -13,7 +18,11 @@
        (-> n (quot 1000) (rem 10))
        (-> n (quot 10000) (rem 10))]})
 
-(parse-inst 1102)
+(defn read-code
+  [f]
+  (->> (str/split (str/trim-newline (slurp (io/resource f))) #",")
+               (map #(Integer/parseInt %))
+               vec))
 
 (def mnemonic
   {1 ["ADD" 3]
@@ -117,6 +126,12 @@
     :base 0
     :input input
     :output []}))
+
+(defn seed-machine
+  [machine [a b]]
+  (-> machine
+      (assoc-in [:memory 1] a)
+      (assoc-in [:memory 2] b)))
 
 (defn run
   "Run to HALT state"
