@@ -1,4 +1,4 @@
-(ns d2
+(ns aoc.d2
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 

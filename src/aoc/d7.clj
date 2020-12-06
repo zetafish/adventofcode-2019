@@ -1,4 +1,4 @@
-(ns ac19.d7
+(ns aoc.d7
   (:require [ac19.core :as core]
             [clojure.java.io :as io]
             [clojure.string :as str]))
@@ -69,12 +69,12 @@
   next amp etc. until the last one."
   [{:keys [amps signal]}]
   (let [a (produce-output (amps 0) signal)
-        b (produce-output (amps 1) (first (:output a)))
-        c (produce-output (amps 2) (first (:output b)))
-        d (produce-output (amps 3) (first (:output c)))
-        e (produce-output (amps 4) (first (:output d)))]
+        b (produce-output (amps 1) (last (:output a)))
+        c (produce-output (amps 2) (last (:output b)))
+        d (produce-output (amps 3) (last (:output c)))
+        e (produce-output (amps 4) (last (:output d)))]
     {:amps [a b c d e]
-     :signal (first (:output e))}))
+     :signal (last (:output e))}))
 
 (defn feedback
   "Run feedback loop until the amps are halted."

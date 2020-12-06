@@ -1,4 +1,4 @@
-(ns ac19.core)
+(ns aoc.core)
 
 (defn digits [n]
   (loop [v nil n n]
@@ -8,32 +8,43 @@
 
 (defn parse-inst
   [n]
-  (let [m [(-> n (quot 100) (rem 10))
-           (-> n (quot 1000) (rem 10))
-           (-> n (quot 10000) (rem 10))]]
-    {:opmemory (rem n 100)
-     :m m
-     :m1 (m 0)
-     :m2 (m 1)
-     :m3 (m 2)}))
+  {:opcode (rem n 100)
+   :m [(-> n (quot 100) (rem 10))
+       (-> n (quot 1000) (rem 10))
+       (-> n (quot 10000) (rem 10))]})
+
+(parse-inst 1102)
+
+(def mnemonic
+  {1 ["ADD" 3]
+   2 ["MUL" 3]
+   3 ["RECV" 1]
+   4 ["EMIT" 1]
+   5 ["JNZ" 2]
+   6 ["JZ" 2]
+   7 ["LT" 3]
+   8 ["EQ" 3]
+   9 ["SETBP" 1]
+   99 ["HALT"]})
 
 (defn step
-  [{:keys [memory n input] :as state}]
-  (let [{:keys [opmemory m]} (parse-inst (memory n))
+  [{:keys [memory base n input] :as state}]
+  (let [fetch (fn [i] (get memory i 0))
+        {:keys [opcode m]} (parse-inst (fetch n))
         par (fn [i]
-              (let [x (memory (+ i n))]
-                (if (= 0 (m (dec i)))
-                  (memory x)
-                  x)))]
-    (case opmemory
+              (case (m (dec i))
+                0 (fetch (fetch (+ i n)))
+                1 (fetch (+ i n))
+                2 (fetch (+ base (fetch (+ i n))))))]
+    (condp =  opcode
       ;; ADD
       1 (-> state
             (update :n + 4)
-            (assoc-in [:memory (memory (+ 3 n))] (+ (par 1) (par 2))))
+            (assoc-in [:memory (memory (+ 3 n))] (+' (par 1) (par 2))))
       ;; MUL
       2 (-> state
             (update :n + 4)
-            (assoc-in [:memory (memory (+ 3 n))] (* (par 1) (par 2))))
+            (assoc-in [:memory (memory (+ 3 n))] (*' (par 1) (par 2))))
       ;; RECV
       3 (-> state
             (update :n + 2)
@@ -61,8 +72,16 @@
             (update :n + 4)
             (assoc-in [:memory (memory (+ 3 n))]
                       (if (= (par 1) (par 2)) 1 0)))
+      ;; SETBP
+      9 (-> state
+            (update :n + 2)
+            (update :base + (par 1)))
       ;; HALT
-      99 (assoc state :halted true))))
+      99 (assoc state :halted true)
+      #_(throw (ex-info "Bad case"
+                        {:state state
+                         :pi (parse-inst (memory n))
+                         :opcode opcode})))))
 
 (defn disassemble
   [{:keys [memory n] :as state}]
@@ -81,6 +100,7 @@
                 6 (f "JZ" 3)
                 7 (f "LT" 3)
                 8 (f "EQ" 3)
+                9 (f "SETBP" 1)
                 99 (f "HALT" 0)
                 (f "NOP" 0))]
     (-> state
@@ -89,10 +109,14 @@
 
 (defn machine
   "Create a machine"
+  ([memory] (machine memory []))
   ([memory input]
-   {:memory memory :n 0 :input input})
-  ([memory]
-   {:memory memory :n 0}))
+   {:memory (zipmap (iterate inc 0) memory)
+    :cost 0
+    :n 0
+    :base 0
+    :input input
+    :output []}))
 
 (defn run
   "Run to HALT state"

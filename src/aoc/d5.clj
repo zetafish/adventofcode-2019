@@ -1,4 +1,4 @@
-(ns ac19.d5
+(ns aoc.d5
   (:require [ac19.core :as core]
             [clojure.java.io :as io]
             [clojure.string :as str]))

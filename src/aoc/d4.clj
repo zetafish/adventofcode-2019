@@ -1,4 +1,4 @@
-(ns d4)
+(ns aoc.d4)
 
 (def start 138307)
 (def end 654504)

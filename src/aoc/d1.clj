@@ -1,4 +1,4 @@
-(ns d1
+(ns aoc.d1
   (:require [clojure.java.io :as io]))
 
 (def input
