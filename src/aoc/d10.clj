@@ -38,15 +38,26 @@
 (defn gcd [a b]
   (int (.gcd (biginteger a) (biginteger b))))
 
-(defn contour [{:keys [mx my]} [x y]]
-  (let [start [x 0]
-        north-west (reverse (map #(vector % 0) (range 0 x)))
-        west (map #(vector 0 %) (range 1 my))
-        south (map #(vector % (dec my)) (range 1 mx))
-        east (reverse (map #(vector (dec mx) %) (range (dec my))))
-        north-east (reverse (map #(vector % 0) (range (inc x) (dec mx))))]
-    (remove #{[x y]}
-            (concat [start] north-west west south east north-east))))
+(defn polar [[x y]]
+  {:r (Math/sqrt (+ (* x x) (* y y)))
+   :theta (Math/atan2 y x)})
+
+(defn rot90 [[x y]] [(- y) x])
+
+(defn rot270 [[x y]] [y (- x)])
+
+(defn flip-y-axis [[x y]] [x (- y)])
+
+(defn relative-polar
+  "clockwise with north=0"
+  [from to]
+  (let [p (->> (map - to from)
+               flip-y-axis
+               rot270
+               polar)]
+    (if (> (:theta p) 0)
+      p
+      (update p :theta + (* 2 Math/PI)))))
 
 (defn beam [from to]
   (let [[dx dy] (map - to from)
@@ -58,8 +69,9 @@
                  (take-while #(not= % to)))
             [to])))
 
-(defn beams-from [world from]
-  (->> (contour world from)
+(defn beams-from [from to-points]
+  (->> to-points
+       (remove #{from})
        (map #(beam from %))
        (partition-by first)
        (map (comp last (partial sort-by count)))))
@@ -69,13 +81,14 @@
 
 (defn visible-asteroids
   [world from]
-  (let [beams (beams-from world from)
+  (let [beams (beams-from from (:points world))
         asteroids-on-beams (map #(find-asteroids world %) beams)
         hidden-asteroids (mapcat rest asteroids-on-beams)
         total-asteroids (find-asteroids world (:points world))]
     (->> total-asteroids
          (remove (set hidden-asteroids))
-         (remove #{from}))))
+         (remove #{from})
+         (sort-by (comp - :theta #(relative-polar from %))))))
 
 (defn hot-spot [world]
   (->> (find-asteroids world (:points world))
@@ -83,19 +96,51 @@
        (sort-by second)
        last))
 
+(defn zap-asteroids [world points]
+  (reduce (fn [world p]
+            (update world :grid assoc-in (reverse p) \.))
+          world
+          points))
+
+(defn rotate-laser [{:keys [world hits station] :as state}]
+  (let [v (visible-asteroids world station)]
+    ;;(println "zapping" v)
+    (-> state
+        (update :hits (fnil into []) v)
+        (update :world zap-asteroids v))))
+
 ;; part 1
 (hot-spot (read-world "d10a.txt"))
 (hot-spot (read-world "d10b.txt")) ;; should be [5 8] 33
 (hot-spot (read-world "d10c.txt")) ;; should be [1 2] 35
 (hot-spot (read-world "d10d.txt")) ;; should be [6 3] 41
 (hot-spot (read-world "d10e.txt")) ;; should be [11 13] 210
+(hot-spot (read-world "d10.txt"))
 
-(let [w (read-world "d10b.txt")]
-  (map first (beams-from w [5 2])))
+(do
+  (println "--")
+  (->> {:world (read-world "d10e.txt") :station [11 13]}
+       rotate-laser
+       rotate-laser
+       rotate-laser
+       rotate-laser
+       rotate-laser
+       rotate-laser
+       rotate-laser
+       rotate-laser
+       :hits
+       (take 200)
+       last
+       ;;:world :grid (run! println)
+       ))
 
-
-(->> (visible-asteroids (read-world "d10b.txt") [5 2])
-     (map #(mapv - [5 2] %))
-     sort)
-
-(read-world "d10c.txt")
+(do
+  (println "--")
+  (->> {:world (read-world "d10.txt") :station [19 14]}
+       rotate-laser
+       rotate-laser
+       :hits
+       (take 200)
+       last
+       ;;:world :grid (run! println)
+       ))
