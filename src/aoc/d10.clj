@@ -8,9 +8,13 @@
 (defn world [grid]
   (let [mx (count (first grid))
         my (count grid)]
-    {:grid grid
+    {:grid (mapv vec grid)
      :mx mx
      :my my
+     :edge (concat (for [x (range mx)] [x 0])
+                   (for [x (range mx)] [x (dec my)])
+                   (for [y (range my)] [0 y])
+                   (for [y (range my)] [(dec mx) y]))
      :points (for [x (range mx)
                    y (range my)] [x y])}))
 
@@ -20,62 +24,78 @@
                 "....#"
                 "...##"]))
 
-(def input (world (str/split-lines (slurp (io/resource "d10.txt")))))
+(def x2 (world [".#....#####...#.."
+                "##...##.#####..##"
+                "##...#...#.#####."
+                "..#.....#...###.."
+                "..#.#.....#....##"]))
 
-;; step 1: determine the rays to follow
-;; step 2: follow the rays and see if they hit yes or no
+(defn read-world [n]
+  (world (str/split-lines (slurp (io/resource n)))))
 
-;; brute force approach
+(def input (read-world "d10.txt"))
 
-;; 0,0: top-left
-;; 1,0: one right from top-left
-;; 0,1: one down from top-left
+(defn gcd [a b]
+  (int (.gcd (biginteger a) (biginteger b))))
 
-(defn dist [v1 v2]
-  (->> (map - v1 v2)
-       (map #(* % %))
-       (reduce +)
-       Math/sqrt))
+(defn contour [{:keys [mx my]} [x y]]
+  (let [start [x 0]
+        north-west (reverse (map #(vector % 0) (range 0 x)))
+        west (map #(vector 0 %) (range 1 my))
+        south (map #(vector % (dec my)) (range 1 mx))
+        east (reverse (map #(vector (dec mx) %) (range (dec my))))
+        north-east (reverse (map #(vector % 0) (range (inc x) (dec mx))))]
+    (remove #{[x y]}
+            (concat [start] north-west west south east north-east))))
 
-(defn inside [{:keys [mx my]} [x y]]
-  (and (<= 0 x (dec mx))
-       (<= 0 y (dec my))))
+(defn beam [from to]
+  (let [[dx dy] (map - to from)
+        d (gcd dx dy)
+        dx (/ dx d)
+        dy (/ dy d)]
+    (concat (->> (iterate #(mapv + [dx dy] %) from)
+                 (drop 1)
+                 (take-while #(not= % to)))
+            [to])))
 
-(defn see [world [x y]]
-  (get-in world [:grid y x]))
+(defn beams-from [world from]
+  (->> (contour world from)
+       (map #(beam from %))
+       (partition-by first)
+       (map (comp last (partial sort-by count)))))
 
-(defn trace-ray
-  [world from to]
-  (let [v (map - to from)]
-    (->> (iterate (partial map + v) to)
-         (take-while (partial inside world)))))
+(defn find-asteroids [world points]
+  (filter #(= \# (get-in (:grid world) (reverse %))) points))
 
-(defn sweep [world origin]
-  (loop [points (->> (:points world)
-                     (remove #{origin})
-                     (sort-by (partial dist origin)))
-         hits []]
-    (if (empty? points)
-      hits
-      (let [ray (trace-ray world origin (first points))
-            hit (->> ray
-                     (drop-while #(= \. (see world %)))
-                     first)
-            points (remove (set ray) points)]
-        (recur (remove (set ray) points)
-               (if hit (conj hits hit) hits))))))
+(defn visible-asteroids
+  [world from]
+  (let [beams (beams-from world from)
+        asteroids-on-beams (map #(find-asteroids world %) beams)
+        hidden-asteroids (mapcat rest asteroids-on-beams)
+        total-asteroids (find-asteroids world (:points world))]
+    (->> total-asteroids
+         (remove (set hidden-asteroids))
+         (remove #{from}))))
 
-(defn sweep-all
-  [world]
-  (->> (:points world)
-       (filter #(= \# (see world %)))
-       (map (fn [origin]
-              {:origin origin
-               :sweep (sweep world origin)}))))
-
-(last (sort-by (comp count :sweep) (sweep-all x1)))
+(defn hot-spot [world]
+  (->> (find-asteroids world (:points world))
+       (map #(vector % (count (visible-asteroids world %))))
+       (sort-by second)
+       last))
 
 ;; part 1
-(count
- (:sweep
-  (last (sort-by (comp count :sweep) (sweep-all input)))))
+(hot-spot (read-world "d10a.txt"))
+(hot-spot (read-world "d10b.txt")) ;; should be [5 8] 33
+(hot-spot (read-world "d10c.txt")) ;; should be [1 2] 35
+(hot-spot (read-world "d10d.txt")) ;; should be [6 3] 41
+(hot-spot (read-world "d10e.txt")) ;; should be [11 13] 210
+
+(let [w (read-world "d10b.txt")]
+  (map first (beams-from w [5 2])))
+
+
+(->> (visible-asteroids (read-world "d10b.txt") [5 2])
+     (map #(mapv - [5 2] %))
+     sort)
+
+(read-world "d10c.txt")
